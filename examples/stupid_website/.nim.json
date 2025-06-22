@@ -1,0 +1,24 @@
+{
+    "index.html":{
+        "_nim_template":"templates/webpage.html",
+        "title":"Home",
+        "links":[
+            {"href":"./favorites/colour.html","text":"colour"},
+            {"href":"./favorites/animal.html","text":"animal"}
+        ]
+    },
+    "favorites/":{
+        "colour.html":{
+            "_nim_template":"templates/webpage.html",
+            "title":"Favorite Colour",
+            "content":"Blue",
+            "links":{"href":"../index.html","text":"Home"}
+        },
+        "animal.html":{
+            "_nim_template":"templates/webpage.html",
+            "title":"Favorite Animal",
+            "content":"Cat",
+            "links":{"href":"../index.html","text":"Home"}
+        }
+    }
+}
