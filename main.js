@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 const fs = require('node:fs/promises');
 const path = require('path');
 const {plan_expansion,expand_tree} = require('./nimplate.js');

@@ -1,0 +1,6 @@
+I have a {var1}, I have a {var2}
+Uh! {var2}-{var1}!
+I have a {var1}, I have {var3}
+Uh! {var3}-{var1}!
+{var2}-{var1}, {var3}-{var1}
+Uh!

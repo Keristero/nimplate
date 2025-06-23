@@ -1,7 +1,8 @@
 {
   "name": "nimplate",
   "version": "1.0.0",
-  "main": "nimplate.js",
+  "main": "main.js",
+  "bin": "./main.js",
   "directories": {
     "example": "examples"
   },
@@ -11,15 +12,17 @@
       "js",
       "mjs"
     ],
-    "spec": ["_tests/**/*"]
+    "spec": [
+      "_tests/**/*"
+    ]
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
+  "author": "Keristero",
   "license": "ISC",
-  "description": "",
-  "dependencies": {
+  "description": "Simple command line utility that uses JSON to generate files and folders",
+  "devDependencies": {
     "mocha": "^11.7.0",
     "mocha-junit-reporter": "^2.2.1"
   }

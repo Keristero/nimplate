@@ -1,0 +1,8 @@
+{
+    "lyrics.txt": {
+        "_nim_template": "template.txt",
+        "var1":"Pen",
+        "var2":"Apple",
+        "var3":"Pineapple"
+    }
+}
