@@ -1,4 +1,4 @@
-# .nim.json templater
+# nimplate
 Takes a JSON string looking something like this:
 ```json
 "scripts/":{
@@ -11,7 +11,7 @@ Takes a JSON string looking something like this:
     
 ```
 
-It will read any referenced nim template files, they can be any file type. as soon as we use them here, they are considered nim templates regardless of their feelings.
+It will read any referenced template files *which are just any text based file like this one... *
 
 `/templates/echoer.bat`
 ```bat
@@ -26,6 +26,9 @@ and produces these files and folders
 *what incredible power*
 
 The idea is that you generate the nim.json content using whatever language you want, then you call this tool and it creates the output for you.
+
+## Installation
+`npm i nimplate -g`
 
 ## Usage
 1. write your nim json file and your templates
