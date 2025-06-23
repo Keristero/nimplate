@@ -78,12 +78,12 @@ the **key** can be used to name three things:
 - cant contain folders
     ```json
         "secret_password.txt":{
-            "_nim_template":"/templates/creds.txt"
+            "_nim_template":"/templates/creds.txt",
             "password":"abc123"
         } ✅
 
         "secret_password.txt":{
-            "_nim_template":"/templates/creds.txt"
+            "_nim_template":"/templates/creds.txt",
             "password_folder/":{} ⁉️
         }
     ```
@@ -106,15 +106,26 @@ the **key** can be used to name three things:
     }
     ```
 - if you reference an object `{some_object}`, you can reference any variables inside it like this `{some_object{another_variable}}`
-- if you reference an array `{some_array}`, all of the values will be used
-- you can put as many variables in one or more curley brackets as you like `{{some_variable} {some_variable} {{ladedah, hello {some_variable}}}}`
+- if you reference an array `{some_array}`, you get a string with comma seperation. eg: "one,two,three"
+- you can template values from arrays too, for example, 
+    - say you have an array of objects:
+    ```json
+    "arrrrr":[{"val":"🍌"},{"val":"🍎"},{"val":"🍐"}]
+    ```
+    - you could template them like this
+    ```js
+    {arrrrr{You got {val}!
+    }}
+    ```
+    - and get this output
+    ```
+    You got 🍌!
+    You got 🍎!
+    You got 🍐!
+    ```
 
-### nim Templates
-- can be any file that can be processed as text
-- any variables provided by the nim.json file will be found and replaced
-
-
-**for example, these two inputs:**
+## More examples
+**take these two inputs:**
 - `template.txt`
     ```txt
     I have a {var1}, I have a {var2}
@@ -137,7 +148,7 @@ the **key** can be used to name three things:
     ```
 **run the command**
 `nimplate --json ./examples/pen/.nim.json --output_dir ./output/pen`
-**would produce this `lyrics.txt`**
+**and you get `lyrics.txt`**
 ```txt
 I have a Pen, I have a Apple
 Uh! Apple-Pen!
@@ -147,3 +158,4 @@ Apple-Pen, Pineapple-Pen
 Uh!
 ```
 
+## Check /examples and /example_outputs in the github repo for more
