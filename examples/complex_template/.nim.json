@@ -22,6 +22,8 @@
             {"array":[
                 {"value":"rule"}
             ]}
-        ]
+        ],
+        "array_of_numbers":[1,2,3,4],
+        "array_of_strings":["one","two","three","four"]
     }
 }

@@ -203,14 +203,10 @@ async function fill_file_template(template_text, scoped_variables) {
     // Format a value for output
     const formatValue = (val) => {
         if (val === undefined || val === null) return '';
-        if (typeof val === 'string' || typeof val === 'number') return String(val);
-        if (typeof val === 'boolean') return val.toString();
+        if (typeof val === 'string' || typeof val === 'number' || typeof val === 'boolean') return String(val);
         if (Array.isArray(val)) {
             if (val.length === 0) return '';
-            if (typeof val[0] === 'string') return val.join('\n');
-            if (typeof val[0] === 'number') return val.join(',');
-            if (typeof val[0] === 'object') return val.map(v => JSON.stringify(v)).join('\n');
-            return val.map(String).join('\n');
+            return val.map(formatValue).join(',');
         }
         if (typeof val === 'object') return JSON.stringify(val);
         return String(val);
