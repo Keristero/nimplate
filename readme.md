@@ -8,7 +8,7 @@
 
 Feed **nimplate** a JSON like this:
 
-```json
+```js
 "scripts/": {
     "hello_world.bat": {
         "_nim_template": "/templates/echoer.bat",
@@ -73,22 +73,22 @@ It's just regular JSON, but with a few rules:
 ### 🔑 Keys
 
 - **Ends with `/`**: *It's a folder!*
-    ```json
+    ```js
     "my_folder/": {}
     ```
 - **Contains a `.`**: *It's a file!*
-    ```json
+    ```js
     "my_file.txt": {}
     ```
 - **Otherwise**: *It's a variable!*
-    ```json
+    ```js
     "my_variable": "value"
     ```
 
 ### 📁 Folders
 
 - Must have object values:
-    ```json
+    ```js
     "folder/": {}      // ✅
     "folder/": "oops"  // ❌
     ```
@@ -99,7 +99,7 @@ It's just regular JSON, but with a few rules:
 - Must have a `_nim_template` variable.
 - Can't contain folders.
 
-    ```json
+    ```js
     "secret.txt": {
         "_nim_template": "/templates/creds.txt",
         "password": "abc123"
@@ -130,7 +130,7 @@ Variables in your `.nim.json` can be any JSON type (except `null`). They are use
 | folder    | ❌       | `"folder_var/": {}`          |
 | file      | ❌       | `"file_var.bat": {}`         |
 
-```json
+```js
 {
     "variables": {
         "string_var": "A",         // ✅ string
@@ -154,7 +154,7 @@ Variables in your `.nim.json` can be any JSON type (except `null`). They are use
 
 **Example:**
 
-```json
+```js
 {
     "character": {
         "name": "Link",
@@ -190,7 +190,7 @@ Character JSON: {"name":"Link","stats":{"health":100,"mana":50}}
 
 **Example 1: Array of primitives**
 
-```json
+```js
 {
     "colors": ["red", "green", "blue"]
 }
@@ -208,7 +208,7 @@ Available colors: red,green,blue
 
 **Example 2: Array of objects**
 
-```json
+```js
 {
     "fruits": [
         {"name": "Banana", "emoji": "🍌"},
@@ -241,7 +241,7 @@ Fruit: Pear 🍐
 
 **Example:**
 
-```json
+```js
 {
     "title": "Hello",
     "count": 3,
