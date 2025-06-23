@@ -1,0 +1,27 @@
+{
+    "readme.md": {
+        "_nim_template": "template.md",
+        "value1":"this",
+        "something_false": false,
+        "something_true": true,
+        "something_null": null,
+        "number": 42,
+        "object":{
+            "key1":"value1",
+            "key2":"value2"
+        },
+        "array":[
+            {"nested":"this"},
+            {"nested":"that"}
+        ],
+        "array_of_object":[
+            {"array":[
+                {"value":"deep"},
+                {"value":"values"}
+            ]},
+            {"array":[
+                {"value":"rule"}
+            ]}
+        ]
+    }
+}

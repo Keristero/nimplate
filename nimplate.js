@@ -2,69 +2,9 @@
 //I dont  want to use any dependencies
 const fs = require('node:fs/promises');
 const path = require('path');
-const process = require('process');
 
 //usage: node nimplate.js [--json <json_file_path>]
 //or pipe json data
-
-async function read_from_stdin() {
-    return new Promise((resolve, reject) => {
-        let data = '';
-        process.stdin.on('data', chunk => data += chunk);
-        process.stdin.on('end', () => {
-            resolve(data);
-        });
-        process.stdin.on('error', err => reject(err));
-    });
-}
-
-async function read_args() {
-    //get json path if provided
-    const args = process.argv.slice(2);
-    const json_arg_index = args.indexOf('--json');
-    const working_dir_arg_index = args.indexOf('--cwd');
-    const output_dir_arg_index = args.indexOf('--output_dir');
-
-
-    let json_file_path = ".";
-    if (json_arg_index !== -1 && json_arg_index + 1 < args.length) {
-        json_file_path = args[json_arg_index + 1];
-    }
-
-    if (process.stdin.isTTY) {
-        // If not piped, load from path
-        json_string = await fs.readFile(json_file_path, 'utf8');
-    } else {
-        json_string = await read_from_stdin();
-    }
-    let json_data = JSON.parse(json_string);
-
-    //get the working_dir argument from --working_dir or use current working directory
-    //defaults to the directory containing the json, if that was provided
-    let working_dir = path.dirname(path.resolve(json_file_path || '.'));
-    if (working_dir_arg_index !== -1 && working_dir_arg_index + 1 < args.length) {
-        working_dir = args[working_dir_arg_index + 1];
-    }
-
-    //get the output_dir argument, or use the working directory
-    let output_dir = working_dir
-    if (output_dir_arg_index !== -1 && output_dir_arg_index + 1 < args.length) {
-        output_dir = args[output_dir_arg_index + 1];
-    }
-
-    return {json_data,working_dir,output_dir}
-}
-
-async function main() {
-    // read json file from path if required
-    let {json_data,working_dir,output_dir} = await read_args();
-    //validate
-    let metadata = await check_tree_validity(json_data,working_dir);
-    console.log("Metadata:", metadata);
-    console.log("variable tree:", JSON.stringify(metadata.variable_tree, null, 2));
-    //expand macro
-    await expand_tree(metadata,output_dir);
-}
 
 async function* traverse_nim_object(obj) {
     // Use a stack to avoid recursion, traverse the object breadth-first, yield exactly once for each key, yield the {key,value,path}
@@ -72,6 +12,10 @@ async function* traverse_nim_object(obj) {
     while (stack.length > 0) {
         const { key, value, path } = stack.pop();
         let nim_type = determine_nim_type(key,path)
+        if(value === undefined || value === null) {
+            //if the value is undefined or null, skip it without even yielding
+            continue
+        }
         yield [key, value, path, nim_type];
         if (nim_type === 'variable' && typeof value === 'object'){
             //we dont need to traverse variables.
@@ -136,7 +80,7 @@ function remove_root(nim_path) {
     return nim_path.slice(1);
 }
 
-async function check_tree_validity(nim_tree,working_dir) {
+async function plan_expansion(nim_tree,working_dir) {
     let iterator = traverse_nim_object(nim_tree);
     let validation_errors = [];
     let template_files_paths = {};
@@ -155,14 +99,14 @@ async function check_tree_validity(nim_tree,working_dir) {
         let has_child_folder = Object.keys(value).some(k => k.endsWith('/'));
         if(has_child_folder){
             //if the file has a child folder, add a validation error
-            add_validation_error(validation_errors,nim_path,`${nim_type} ${key} should not have any child folders`);
+            add_validation_error(validation_errors,nim_path,`${key} should not have any child folders`);
         }
     }
     function assert_object_value(key,value,nim_path){
         let not_object_value = typeof value !== 'object';
         if(not_object_value){
             //if the folder does not have an object value, add a validation error
-            add_validation_error(validation_errors,nim_path,`${nim_type} ${current_key} should have an object value.`);
+            add_validation_error(validation_errors,nim_path,`${current_key} should have an object value.`);
         }
     }
     function assert_template_property(key,value,nim_path){
@@ -182,6 +126,7 @@ async function check_tree_validity(nim_tree,working_dir) {
             assert_object_value(key, value, nim_path)
             let folder_meta = {
                 name: key.slice(0, -1), //remove trailing slash
+                nim_path: nim_path
             }
             folders.push(folder_meta)
         },
@@ -210,7 +155,6 @@ async function check_tree_validity(nim_tree,working_dir) {
     }
 
     for await (const [current_key, value, nim_path, nim_type] of iterator) {
-        console.log(`key: ${current_key}, value: ${value}, nim_path: ${JSON.stringify(nim_path)}, type: ${nim_type}`);
         type_handlers[nim_type](current_key, value, nim_path);
     }
 
@@ -220,6 +164,16 @@ async function check_tree_validity(nim_tree,working_dir) {
         if (template_content === null) {
             add_validation_error(validation_errors, [file_path], `Template file ${file_path} could not be read.`);
         }
+    }
+
+    //try to fill the templates with variables
+    for(let file of files){
+        //get the varible object for the file
+        const [current, last_key] = get_object_and_last_key(file.nim_path, variable_tree);
+        let scoped_variables = current[last_key];
+        let template_text = await template_files_paths[file.template];
+        let expanded_file_text = await fill_file_template(template_text, scoped_variables);
+        file.expanded_file_text = expanded_file_text;
     }
 
     //log all errors
@@ -240,14 +194,14 @@ async function check_tree_validity(nim_tree,working_dir) {
     return metadata
 }
 
+// Fill a template string with variables from scoped_variables
 async function fill_file_template(template_text, scoped_variables) {
-    // Helper: resolve a variable path like "foo.bar.baz"
-    function resolve_var(path, scope) {
-        return path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : undefined, scope);
-    }
+    // Resolve a variable path like "foo.bar.baz" from the scope
+    const resolveVar = (path, scope) =>
+        path.split('.').reduce((acc, key) => (acc && acc[key] !== undefined) ? acc[key] : undefined, scope);
 
-    // Helper: format value for output
-    function format_value(val) {
+    // Format a value for output
+    const formatValue = (val) => {
         if (val === undefined || val === null) return '';
         if (typeof val === 'string' || typeof val === 'number') return String(val);
         if (typeof val === 'boolean') return val.toString();
@@ -260,10 +214,10 @@ async function fill_file_template(template_text, scoped_variables) {
         }
         if (typeof val === 'object') return JSON.stringify(val);
         return String(val);
-    }
+    };
 
     // Find the next balanced {...} block in the template
-    function find_next_brace_block(text, start) {
+    const findNextBraceBlock = (text, start = 0) => {
         let open = text.indexOf('{', start);
         if (open === -1) return null;
         let depth = 0;
@@ -273,86 +227,74 @@ async function fill_file_template(template_text, scoped_variables) {
             if (depth === 0) return { start: open, end: i };
         }
         return null;
-    }
+    };
 
-    // Iteratively process the template with the current scope to avoid stack overflows
-    function process_template(text, scope) {
+    // Replace variables in a string (outside of curly blocks)
+    const replaceVarsInString = (str, scope) => {
+        return str.replace(/\{([a-zA-Z0-9_.]+)\}/g, (match, varName) => {
+            const val = resolveVar(varName, scope);
+            return formatValue(val);
+        });
+    };
+
+    // Process a template string with a given scope
+    // Non-recursive template processor: replaces {var} with value, supports {var{...}} for arrays/objects
+    const processTemplate = (text, scope) => {
         let result = '';
-        let stack = [{ text, scope, idx: 0, result: '' }];
+        let idx = 0;
+        while (idx < text.length) {
+            const block = findNextBraceBlock(text, idx);
+            if (!block) {
+                result += replaceVarsInString(text.slice(idx), scope);
+                break;
+            }
+            result += replaceVarsInString(text.slice(idx, block.start), scope);
+            // Preserve original formatting inside the block
+            let content = text.slice(block.start + 1, block.end);
 
-        while (stack.length > 0) {
-            let frame = stack.pop();
-            let { text, scope, idx } = frame;
-            let localResult = frame.result;
+            // Check if the first word is a variable in the current scope
+            const firstWord = content.trim().split(/\s|{/)[0];
+            const varExists = Object.prototype.hasOwnProperty.call(scope, firstWord);
 
-            while (idx < text.length) {
-                let block = find_next_brace_block(text, idx);
-                if (!block) {
-                    localResult += text.slice(idx);
-                    break;
-                }
-                // Add text before the block
-                localResult += text.slice(idx, block.start);
-
-                // Extract inside of braces
-                let content = text.slice(block.start + 1, block.end).trim();
-
-                // Check for nested template: varName{innerTemplate}
-                let nestedMatch = /^([a-zA-Z0-9_.]+)\{([\s\S]*)\}$/.exec(content);
-                if (nestedMatch) {
-                    const varName = nestedMatch[1];
-                    const innerTemplate = nestedMatch[2];
-                    const value = resolve_var(varName, scope);
-
+            if (varExists) {
+                // Handle nested {var{...}} in a single pass
+                const nested = /^([a-zA-Z0-9_.]+)\{([\s\S]*)\}$/.exec(content.trim());
+                if (nested) {
+                    const [ , varName, inner ] = nested;
+                    const value = resolveVar(varName, scope);
                     if (Array.isArray(value)) {
-                        // Push the rest of the template after this block to the stack
-                        stack.push({ text, scope, idx: block.end + 1, result: localResult });
-                        // Push each array item as a new frame to process the inner template
-                        for (let i = value.length - 1; i >= 0; i--) {
-                            stack.push({ text: innerTemplate, scope: { ...scope, ...value[i] }, idx: 0, result: '' });
-                        }
-                        localResult = '';
-                        break;
+                        result += value.map(item =>
+                            processTemplate(inner, { ...scope, ...item })
+                        ).join('');
                     } else if (typeof value === 'object' && value !== null) {
-                        // Push the rest of the template after this block to the stack
-                        stack.push({ text, scope, idx: block.end + 1, result: localResult });
-                        // Push the object as a new frame to process the inner template
-                        stack.push({ text: innerTemplate, scope: { ...scope, ...value }, idx: 0, result: '' });
-                        localResult = '';
-                        break;
+                        result += processTemplate(inner, { ...scope, ...value });
                     } else {
-                        localResult += format_value(value);
+                        result += formatValue(value);
                     }
                 } else {
-                    // Multiple variables in one set of braces
-                    const parts = content.split(/\s+/);
-                    localResult += parts.map(part => format_value(resolve_var(part, scope))).join(' ');
+                    // Replace {var} or {var1 var2}
+                    const parts = content.trim().split(/\s+/);
+                    result += parts.map(part => formatValue(resolveVar(part, scope))).join(' ');
                 }
-                idx = block.end + 1;
-            }
-
-            // If there is a previous frame, append this result to it
-            if (stack.length > 0) {
-                stack[stack.length - 1].result += localResult;
             } else {
-                result += localResult;
+                // Not a variable in scope, preserve the curly braces but still replace variables inside
+                result += '{' + replaceVarsInString(content, scope) + '}';
             }
+            idx = block.end + 1;
         }
         return result;
-    }
+    };
 
-    return process_template(template_text, scoped_variables);
+    return processTemplate(template_text, scoped_variables);
 }
 
-async function expand_tree(metadata,output_dir) {
+async function expand_tree(plan,output_dir) {
     let {
-        nim_tree,
-        working_dir,
-        template_files_paths,
         files,
         folders,
-        variable_tree
-    } = metadata
+    } = plan
+    // 0 Ensure output directory exists
+    await fs.mkdir(output_dir, { recursive: true });
 
     // 1. Create folders
     for (const folder of folders) {
@@ -360,19 +302,17 @@ async function expand_tree(metadata,output_dir) {
         await fs.mkdir(folderPath, { recursive: true });
     }
 
-    //
-    for(let file of files){
-        //get the varible object for the file
-        const [current, last_key] = get_object_and_last_key(file.nim_path, variable_tree);
-        let scoped_variables = current[last_key];
-        let template_text = await template_files_paths[file.template];
-        let expanded_file_text = await fill_file_template(template_text, scoped_variables);
-        //write the file to the correct path
+    // 2. Write files
+    for (const file of files) {
         const file_path = path.join(output_dir, ...remove_root(file.nim_path))
-        await fs.writeFile(file_path, expanded_file_text, 'utf8');
-
+        await fs.writeFile(file_path, file.expanded_file_text, 'utf8');
     }
     
 }
 
-main()
+module.exports = {
+    plan_expansion,
+    expand_tree,
+    traverse_nim_object,
+    get_object_and_last_key
+}
