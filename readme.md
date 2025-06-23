@@ -44,7 +44,7 @@ The idea is that you generate the nim.json content using whatever language you w
 
 
 ## Design Doc
-### nim.json
+### .nim.json
 Everything there is to know about the .nim.json
 
 Its ordinary json in all its key, value, double quoted glory. **However** you will be growled at if you dont follow these rules

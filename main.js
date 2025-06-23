@@ -52,12 +52,49 @@ async function read_from_stdin() {
     });
 }
 
+
+function pretty_print_plan(plan) {
+    const { files, folders, validation_errors, output_dir, working_dir } = plan;
+
+    // Print summary
+    console.log('\n=== Plan Summary ===');
+    console.log(`Working Directory: ${working_dir || '(not specified)'}`);
+    if (output_dir) console.log(`Output Directory: ${output_dir}`);
+    console.log(`Folders to create: (${folders.length})`);
+    for (const folder of folders) {
+        console.log(`📁 ${path.resolve(folder.nim_path.join('/'))}`);
+    }
+    console.log(`Files to create: (${files.length})`);
+    for (const file of files) {
+        console.log(`📄 ${path.resolve(...file.nim_path)} (📘: ${file.template})`);
+    }
+
+    // Print validation errors, if any
+    if (validation_errors && validation_errors.length > 0) {
+        console.log('\n❌ Validation Errors:');
+        for (const err of validation_errors) {
+            const pathStr = (err.path || []).join(' > ');
+            console.log(`  - At ${pathStr}:
+        ${err.message}`);
+        }
+        process.exit(1);
+    }
+    
+    console.log('\n✅ No validation errors.');
+
+    if(files.length === 0 && folders.length === 0) {
+        console.log('\n👋 Nothing to do! Exiting...');
+        process.exit(0);
+    }
+    console.log('====================\n');
+}
+
 async function main() {
     // read json file from path if required
     let {json_data,working_dir,output_dir} = await read_args();
     //validate
     let plan = await plan_expansion(json_data,working_dir);
-    console.log("variable tree:", JSON.stringify(plan.variable_tree, null, 2));
+    pretty_print_plan(plan);
     //expand macro
     await expand_tree(plan,output_dir);
 }

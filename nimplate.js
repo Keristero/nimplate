@@ -99,14 +99,14 @@ async function plan_expansion(nim_tree,working_dir) {
         let has_child_folder = Object.keys(value).some(k => k.endsWith('/'));
         if(has_child_folder){
             //if the file has a child folder, add a validation error
-            add_validation_error(validation_errors,nim_path,`${key} should not have any child folders`);
+            add_validation_error(nim_path,`${key} should not have any child folders`);
         }
     }
     function assert_object_value(key,value,nim_path){
         let not_object_value = typeof value !== 'object';
         if(not_object_value){
             //if the folder does not have an object value, add a validation error
-            add_validation_error(validation_errors,nim_path,`${current_key} should have an object value.`);
+            add_validation_error(nim_path,`${current_key} should have an object value.`);
         }
     }
     function assert_template_property(key,value,nim_path){
@@ -117,7 +117,7 @@ async function plan_expansion(nim_tree,working_dir) {
             template_files_paths[nim_template_path] = load_nim_template_async(nim_template_path, working_dir);
         }else{
             //if the file does not have a _nim_template property, add a validation error
-            add_validation_error(validation_errors,nim_path,`file ${key} should have a "_nim_template" property.`);
+            add_validation_error(nim_path,`file ${key} should have a "_nim_template" property.`);
         }
     }
 
@@ -162,7 +162,7 @@ async function plan_expansion(nim_tree,working_dir) {
     for (const [file_path, template_promise] of Object.entries(template_files_paths)) {
         let template_content = await template_promise;
         if (template_content === null) {
-            add_validation_error(validation_errors, [file_path], `Template file ${file_path} could not be read.`);
+            add_validation_error(file_path, `Template file ${file_path} could not be read.`);
         }
     }
 

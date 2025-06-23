@@ -10,6 +10,7 @@
     "favorites/":{
         "colour.html":{
             "_nim_template":"templates/webpage.html",
+            "test/":{},
             "title":"Favorite Colour",
             "content":"Blue",
             "links":{"href":"../index.html","text":"Home"}
