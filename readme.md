@@ -1,10 +1,13 @@
-# nimplate
+# ✨ nimplate
 
-**Turn JSON into files and folders using templates. Magic!**
+**Turn JSON into files and folders using templates. Magic! 🪄**
 
-## What does it do?
+---
 
-Feed nimplate a JSON like this:
+## 🚀 What does it do?
+
+Feed **nimplate** a JSON like this:
+
 ```json
 "scripts/": {
     "hello_world.bat": {
@@ -17,8 +20,7 @@ Feed nimplate a JSON like this:
 
 It grabs your template files (any text file will do), like:
 
-`/templates/echoer.bat`
-```bat
+```bat title="/templates/echoer.bat"
 echo "{value_a} {value_b}!"
 ```
 
@@ -28,13 +30,14 @@ And *poof!*—it creates:
 +   scripts/
 +       hello_world.bat
 ```
-*So much power, so little effort!*
 
-Just generate your nim.json however you like, run nimplate, and watch it build your files and folders.
+> 💡 *So much power, so little effort!*
+
+Just generate your `nim.json` however you like, run **nimplate**, and watch it build your files and folders.
 
 ---
 
-## Installation
+## 🛠️ Installation
 
 ```sh
 npm i nimplate -g
@@ -42,42 +45,47 @@ npm i nimplate -g
 
 ---
 
-## Usage
+## ⚡ Usage
 
 1. Write your nim JSON file and templates.
 2. Run nimplate in any of these ways (same result each time!):
-    - `nimplate --json ./examples/hello_world/.nim.json --output_dir ./output`
-    - `nimplate --json ./examples/hello_world/.nim.json --cwd ./examples/hello_world --output_dir ./output`
-    - `cat ./examples/hello_world/.nim.json | nimplate --cwd ./examples/hello_world --output_dir ./output`
 
-### Arguments
+    ```sh
+    nimplate --json ./examples/hello_world/.nim.json --output_dir ./output
+    nimplate --json ./examples/hello_world/.nim.json --cwd ./examples/hello_world --output_dir ./output
+    cat ./examples/hello_world/.nim.json | nimplate --cwd ./examples/hello_world --output_dir ./output
+    ```
 
-- `--json <path>`: Path to your .nim.json (or pipe JSON in directly)
-- `--cwd <path>`: Where to look for templates (defaults to your JSON file's directory)
-- `--output_dir <path>`: Where to put the results (defaults to cwd)
+### 📝 Arguments
+
+| Argument              | Description                                                        |
+|-----------------------|--------------------------------------------------------------------|
+| `--json <path>`       | Path to your `.nim.json` (or pipe JSON in directly)                |
+| `--cwd <path>`        | Where to look for templates (defaults to your JSON file's directory)|
+| `--output_dir <path>` | Where to put the results (defaults to cwd)                         |
 
 ---
 
-## How does .nim.json work?
+## 📦 How does `.nim.json` work?
 
 It's just regular JSON, but with a few rules:
 
-### Keys
+### 🔑 Keys
 
-- **Ends with `/`**: It's a folder!
+- **Ends with `/`**: *It's a folder!*
     ```json
     "my_folder/": {}
     ```
-- **Contains a `.`**: It's a file!
+- **Contains a `.`**: *It's a file!*
     ```json
     "my_file.txt": {}
     ```
-- **Otherwise**: It's a variable!
+- **Otherwise**: *It's a variable!*
     ```json
     "my_variable": "value"
     ```
 
-### Folders
+### 📁 Folders
 
 - Must have object values:
     ```json
@@ -85,11 +93,12 @@ It's just regular JSON, but with a few rules:
     "folder/": "oops"  // ❌
     ```
 
-### Files
+### 📄 Files
 
 - Value must be an object `{}`.
 - Must have a `_nim_template` variable.
 - Can't contain folders.
+
     ```json
     "secret.txt": {
         "_nim_template": "/templates/creds.txt",
@@ -101,18 +110,26 @@ It's just regular JSON, but with a few rules:
         "folder/": {}
     } // ❌
     ```
+
 - `_nim_template` must point to a real text file, or you'll get a growl.
 
-### Variables
+### 🧩 Variables
 
 Variables in your `.nim.json` can be any JSON type (except `null`). They are used to inject dynamic values into your templates.
 
-#### Allowed and Disallowed Variable Types
+#### ✅ Allowed and ❌ Disallowed Variable Types
 
-- **Allowed:** string, number, boolean, object, array
-- **Not allowed:** `null`, files, or folders
+| Type      | Allowed? | Example                       |
+|-----------|----------|------------------------------|
+| string    | ✅       | `"A"`                        |
+| number    | ✅       | `1`                          |
+| boolean   | ✅       | `true`                       |
+| object    | ✅       | `{"x": 1}`                   |
+| array     | ✅       | `[1, 2, 3]`                  |
+| null      | ❌       | `null`                       |
+| folder    | ❌       | `"folder_var/": {}`          |
+| file      | ❌       | `"file_var.bat": {}`         |
 
-Example:
 ```json
 {
     "variables": {
@@ -130,12 +147,13 @@ Example:
 
 ---
 
-#### Objects
+### 🏗️ Objects
 
 - **Reference object variables** using `{object_var{property}}` in your template.
 - If you reference the object directly (e.g. `{object_var}`), you'll get its JSON string.
 
 **Example:**
+
 ```json
 {
     "character": {
@@ -147,12 +165,14 @@ Example:
     }
 }
 ```
+
 Template:
 ```
 Name: {character{name}}
 Health: {character{stats{health}}}
 Character JSON: {character}
 ```
+
 Output:
 ```
 Name: Link
@@ -162,28 +182,32 @@ Character JSON: {"name":"Link","stats":{"health":100,"mana":50}}
 
 ---
 
-#### Arrays
+### 🗂️ Arrays
 
 - **Arrays of primitives** become comma-separated strings:  
   `{colors}` → `red,green,blue`
 - **Arrays of objects** can be iterated in templates using `{array_var{...}}`.
 
 **Example 1: Array of primitives**
+
 ```json
 {
     "colors": ["red", "green", "blue"]
 }
 ```
+
 Template:
 ```
 Available colors: {colors}
 ```
+
 Output:
 ```
 Available colors: red,green,blue
 ```
 
 **Example 2: Array of objects**
+
 ```json
 {
     "fruits": [
@@ -193,12 +217,14 @@ Available colors: red,green,blue
     ]
 }
 ```
+
 Template:
 ```
 {fruits{
 Fruit: {name} {emoji}
 }}
 ```
+
 Output:
 ```
 Fruit: Banana 🍌
@@ -208,12 +234,13 @@ Fruit: Pear 🍐
 
 ---
 
-#### Strings, Numbers, Booleans
+### 🔢 Strings, Numbers, Booleans
 
 - Use `{var}` to inject their value.
 - Booleans become `true` or `false` strings.
 
 **Example:**
+
 ```json
 {
     "title": "Hello",
@@ -221,12 +248,14 @@ Fruit: Pear 🍐
     "isActive": false
 }
 ```
+
 Template:
 ```
 Title: {title}
 Count: {count}
 Active? {isActive}
 ```
+
 Output:
 ```
 Title: Hello
@@ -236,12 +265,11 @@ Active? false
 
 ---
 
-**Tip:**  
-You can nest variables and mix types freely, as long as you follow the rules above. If you try to use a file, folder, or `null` as a variable, nimplate will throw an error.
-
+> 💡 **Tip:**  
+> You can nest variables and mix types freely, as long as you follow the rules above. If you try to use a file, folder, or `null` as a variable, nimplate will throw an error.
 
 ---
 
-## More Examples
+## 📚 More Examples
 
-Check `/examples` and `/example_outputs` in the GitHub repo for more!
+Check [`/examples`](./examples) and [`/example_outputs`](./example_outputs) in the GitHub repo for more!
