@@ -32,7 +32,7 @@ The idea is that you generate the nim.json content using whatever language you w
 
 ## Usage
 1. write your nim json file and your templates
-2. Here are some examples with the same result
+2. Here are some ways to run nimplate with the same result
     1. `nimplate --json ./examples/hello_world/.nim.json --output_dir ./output`
     2. `nimplate --json ./examples/hello_world/.nim.json --cwd ./examples/hello_world --output_dir ./output`
     3. `cat ./examples/hello_world/.nim.json | nimplate --cwd ./examples/hello_world --output_dir ./output`
